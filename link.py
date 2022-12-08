@@ -1,72 +1,80 @@
-code = """
-# комментарий #
+def lexer(c):
+  return c.split()
 
-import ./some.link as some
-modules -> core -> print ( " Hello World " )
-modules -> some -> sub -> run ( " Lorem ipsum dolor sit omlet " )
-modules -> core -> update_var ( " pasha " 115 )
-modules -> core -> print ( $pasha )
-modules -> core -> print_sum ( 1 1 )
-func hello argument1 argument2
-begin 
-
-end
-"""
-variables = {}
-modules = {
-  "core": {
-    "print": lambda *args: print(*args),
-    "update_var": lambda name,value: variables.update({name:value}),
-    "print_sum": lambda a,b: print(a+b)
+def run(code,*args):
+  variables = {}
+  for i in range(len(args)):
+    variables[f"arg{i+1}"] = args[i]
+  modules = {
+    "core": {
+      "print": lambda *args: print(*args),
+      "update_var": lambda name,value: variables.update({name:value})
+     },
+     "custom": {}
   }
-}
-current = None
-code = code.split()
-print(code)
-is_comment = False
-is_bracket = False
-in_bracket = []
-is_quote = False
-in_quote = []
+  bracket = [False,[]]
+  quote = [False,[]]
+  function = [False,"main",[]]
+  current = modules
+  if type(code) == str: code = lexer(code)
+  comment = False
+  for i,c in enumerate(code):
+    if c == "func":
+      function[0] = True
+      function[1] = code[i+1]
+    elif c == "endfunc":
+      function[2] = function[2][1:]
+      function_block = function[2]
+      modules["custom"][function[1]] = lambda *args: run(" ".join(function_block),*args)
+      function[0] = False
+      function[1] = "main"
+      function[2] = []
+    elif function[0]:
+      function[2].append(c)
+    elif c == "#": comment = not comment
+    elif comment: continue
+    elif c == "->":
+      child = code[i+1]
+      parent = code[i-1]
+      if parent in modules:
+        current = modules[parent]
+      if type(current) == function:
+        print("Current is function")
+      elif child in current:
+        current = current[child]
+      else:
+        raise Exception(f"Cannot find property {child} of {parent}")
+    elif c == "(": bracket[0] = True
+    elif c == ")":
+      bracket[0] = False
+      current(*bracket[1])
+      bracket[1] = []
+    elif bracket[0]:
+      if c == '"':
+        quote[0] = not quote[0]
+        if not quote[0]:
+          bracket[1].append(" ".join(quote[1]))
+          quote[1] = []
+      elif quote[0]:
+        quote[1].append(c)
+      elif c.startswith("$"):
+        vname = c[1:]
+        if not vname in variables: raise Exception(f"{vname} is not defined")
+        bracket[1].append(variables[vname])
+      elif c.isdigit():
+       c = int(c)
+       bracket[1].append(c)
 
-for i,c in enumerate(code):
-  if c == "#":
-    is_comment = not is_comment
-  elif is_comment:
-    continue
-  elif c == "import":
-    module = code[i+1]
-    name = None
-    if code[i+2] == "as":
-      name = code[i+3]
-    else:
-      name = code[i+1].split(".link")[0]
-    modules[name] = dict(sub=dict(run=lambda x: print(x)))
-  elif c == "->":
-    child = code[ i+1 ]
-    parent = code[ i-1 ]
-    if parent == "modules":
-      current = modules
-    current = current[child]
-  elif c == "(":
-    is_bracket = True
-  elif c == ")":
-    is_bracket = False
-    current(*in_bracket)
-    in_bracket = []
-  elif is_bracket:
-    if c == '"':
-      is_quote = not is_quote
-      if not is_quote:
-        in_bracket.append(" ".join(in_quote))
-        in_quote = []
-    elif is_quote:
-      in_quote.append(c)
-    elif c.startswith("$"):
-      vname = c[1:]
-      if not vname in variables: raise Exception(f"{vname} is not defined")
-      in_bracket.append(variables[vname])
-    else:
-      if c.isdigit(): c = int(c)
-      in_bracket.append(c)
-print(variables)
+
+example = """
+# комментарий #
+core -> print ( " Hello World " )
+core -> update_var ( " pasha " 115 )
+core -> print ( $pasha )
+func hello
+core -> print ( " I'm in function " )
+endfunc
+custom -> hello ( )
+core -> print ( " It's working? " )
+"""
+run(example,"Hello")

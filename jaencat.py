@@ -2,29 +2,10 @@ from disnake.ext import commands
 import disnake, traceback, aiohttp, hashlib, re, string, io
 from datetime import timedelta, date
 from textwrap import indent
-from tortoise import Tortoise, fields
-from tortoise.models import Model
 
 
 def bar(n, m, l):
     return "[" + ("#" * round(n / m * l)).ljust(l, " ") + "]"
-
-
-class Role(Model):
-    role_id = fields.BigIntField(pk=True)
-    guild_id = fields.BigIntField()
-    alone = fields.BooleanField()
-
-    class Meta:
-        table = "roles"
-
-
-class Guild(Model):
-    guild_id = fields.BigIntField(pk=True)
-    starboard_channel = fields.BigIntField()
-
-    class Meta:
-        table = "guilds"
 
 
 class PersistentView(disnake.ui.View):
@@ -38,6 +19,7 @@ class JaenCat(commands.InteractionBot):
         intents.message_content = True
         super().__init__(
             intents=intents,
+            test_guilds=[812396114648498196]
         )
         self.rp_names = []
 
@@ -52,11 +34,6 @@ class Starboard(commands.Cog):
     @commands.Cog.listener("on_reaction_add")
     @commands.Cog.listener("on_reaction_remove")
     async def handler(self, reaction, user):
-        guild = await Guild.get_or_none(guild_id=reaction.message.guild.id)
-        if not guild:
-            return
-        if guild.starboard_channel == 0:
-            return
         if reaction.emoji != self.emoji:
             return
         count = reaction.count
@@ -69,9 +46,9 @@ class Starboard(commands.Cog):
                 image = reaction.message.attachments[0].url
             emb = disnake.Embed(description=description)
             emb.set_image(url=image)
-            emb.set_user(
-                name=reaction.message.user.display_name,
-                icon_url=reaction.message.user.display_avatar.url,
+            emb.set_author(
+                name=reaction.message.author.display_name,
+                icon_url=reaction.message.author.display_avatar.url,
             )
             content = f":star2: {count} <#{reaction.message.channel.id}>"
             view = disnake.ui.View()
@@ -83,47 +60,60 @@ class Starboard(commands.Cog):
                     content=content, embed=emb, view=view
                 )
             else:
-                message = await self.bot.get_channel(guild.starboard_channel).send(
+                message = await self.bot.get_channel(self.channel).send(
                     content=content, embed=emb, view=view
                 )
                 self.cache[reaction.message.id] = message
         elif reaction.message.id in self.cache:
             await self.cache[reaction.message.id].delete()
             self.cache.pop(reaction.message.id)
+      
 
-
-if __name__ != "__main__":
-    exit()
 bot = JaenCat()
 
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=disnake.Game("фантик"))
-    await Tortoise.init(
-        db_url="mysql://root:6UT4Ki85%5EPwH@localhost:3306/jaencat",
-        modules={"models": ["__main__"]},
-    )
+    await bot.change_presence(activity=disnake.Game("фантик лапкой"))
     bot.add_cog(Starboard(bot))
 
+@bot.slash_command(description="Отправить реплику от имени персонажа")
+@commands.bot_has_permissions(manage_webhooks=True)
+async def rp(
+    inter,
+    character: str = commands.Param(description="Имя персонажа"),
+    text: str = commands.Param(description="Текст реплики"),
+):
+    webhooks = await inter.channel.webhooks()
+    if len(webhooks) < 1:
+        webhook = await inter.channel.create_webhook(name="Jaen Cat")
+        await webhook.send(text, username=character)
+    else:
+        await webhooks[0].send(text, username=character)
+    await inter.response.send_message("Реплика отправлена", ephemeral=True)
 
+allowed_roles = [1008009505742782494,1008009618187886602,1008009905996845078,1008010042626293800,1008010258767171717,1008010366707568740,1008010503328645150,1008010629757542561,1008010761626472599,1008010860133892159,1008011059614974043,1008011282072469605,1008011429124788335,1008011616173953055]
 @bot.slash_command(description="Выдача цветной или пинг роли")
 @commands.bot_has_permissions(manage_roles=True)
 async def claim(
     inter,
     role: disnake.Role = commands.Param(description="Разрешенная роль для выдачи"),
 ):
-    await inter.response.defer()
-    r = await Role.get_or_none(guild_id=inter.guild.id, role_id=role.id)
-    if not r:
-        return await inter.edit_original_response(
+  await inter.response.defer()
+  if not role.id in allowed_roles:
+    return await inter.edit_original_response(
             content="Данной роли нету в списке разрешенных для выдачи"
         )
-    if r.alone:
-        alone_roles = await Role.filter(guild_id=inter.guild.id, alone=True)
-        for ar in alone_roles:
-            ar = disnake.utils.get(inter.guild.roles, id=ar.role_id)
-            await inter.user.remove_roles(ar)
+  ping_roles = [1008011282072469605,1008011429124788335,1008011616173953055]
+  if not role.id in ping_roles:
+    for r in allowed_roles:
+      if r in ping_roles: continue
+      rr = inter.guild.get_role(r)
+      if rr in inter.user.roles and rr != role: await inter.user.remove_roles(rr)
+  if role in inter.user.roles:
+    await inter.user.remove_roles(role)
+    await inter.edit_original_response(content="Роль успешно убрана")
+  else:
     await inter.user.add_roles(role)
     await inter.edit_original_response(content="Роль успешно добавлена")
 
@@ -137,36 +127,6 @@ async def cat(inter):
             emb = disnake.Embed(title="Мяу!")
             emb.set_image(url="attachment://cat.png")
             await inter.edit_original_response(embed=emb, file=file)
-
-
-@bot.slash_command(description="Отправить реплику от имени персонажа")
-@commands.bot_has_permissions(manage_webhooks=True)
-async def rp(
-    inter,
-    character: str = commands.Param(description="Имя персонажа"),
-    text: str = commands.Param(description="Текст реплики"),
-):
-    if len(bot.rp_names) > 24:
-        bot.rp_names = bot.rp_names[1:]
-    if not character in bot.rp_names:
-        bot.rp_names.append(character)
-    webhooks = await inter.channel.webhooks()
-    if len(webhooks) < 1:
-        webhook = await inter.channel.create_webhook(name="Jaen Cat")
-        await webhook.send(text, username=character)
-    else:
-        await webhooks[0].send(text, username=character)
-    await inter.response.send_message("Реплика отправлена", ephemeral=True)
-
-
-@rp.autocomplete("character")
-async def character_autocomplete(i: disnake.Interaction, current: str):
-    return [
-        ch
-        for ch in bot.rp_names
-        if current.lower() in ch.lower()
-    ]
-
 
 @bot.slash_command(
     description="Отправить нарушителей подумать о своем поведении",
@@ -228,9 +188,6 @@ async def eval_message(i: disnake.Interaction, message: disnake.Message):
             "bot": bot,
             "i": i,
             "message": message,
-            "Role": Role,
-            "Guild": Guild,
-            "Tortoise": Tortoise,
         }
         exec(f"async def exec_function():\n{indent(code,'  ')}", env)
         output = await env["exec_function"]()
@@ -311,12 +268,53 @@ async def survey(
     for i, a in enumerate(answers):
         if not a:
             continue
+        if len(a) > 80:
+          return await inter.response.send_message(content=f"Вариант ответа {i} слишком длинный. Сократите его")
         answers[i] = f"{a} (0)"
     view.add_item(SurveySelect(answers))
     emb = disnake.Embed(
         title="Внимание, опрос", description=f"{content}\nПроголосовали: "
     )
     await inter.response.send_message(embed=emb, view=view)
+
+@bot.slash_command(description="Очистка сообщений",default_member_permissions=disnake.Permissions(manage_messages=True))
+@commands.bot_has_permissions(manage_messages=True)
+async def clear(inter, count: int = commands.Param(description="Количество сообщений для удаления")):
+  if count > 100 or count < 1: return await inter.response.send_message(content="Можно только от 1 до 100 сообщений")
+  await inter.response.defer()
+  await inter.delete_original_response()
+  await inter.channel.purge(limit=count)
+
+
+@bot.event
+async def on_message_delete(message):
+  if message.author.bot: return
+  channel = bot.get_channel(1058288394469380106)
+  entry = await message.guild.audit_logs(limit=1,action=disnake.AuditLogAction.message_delete).flatten()
+  who = None
+  if entry[0]:
+    entry = entry[0]
+  else:
+    who = "Автор или бот"
+  if entry.target.id == message.author.id:
+    who = f"{entry.user.name}#{entry.user.discriminator} ({entry.user.mention})"
+  else:
+    who = "Автор или бот"
+  emb = disnake.Embed(title="Сообщение удалено",description=f"```{message.content.replace('`','`'+ chr(8302))}```")
+  emb.add_field(name="Автор",value=f"{message.author.name}#{message.author.discriminator} ({message.author.mention})")
+  emb.add_field("Кто удалил",who)
+  emb.add_field(name="Канал",value=f"{message.channel.name} ({message.channel.mention})")
+  await channel.send(embed=emb)
+  
+@bot.event
+async def on_message_edit(before,after):
+  if before.author.bot: return
+  channel = bot.get_channel(1058288394469380106)
+  
+  emb = disnake.Embed(title="Сообщение изменено",description=f"Старое сообщение:\n```{before.content.replace('`','`' + chr(8302))}```\nНовое сообщение:\n```{after.content.replace('`','`' + chr(8302))}```")
+  emb.add_field(name="Автор",value=f"{before.author.name}#{before.author.discriminator} ({before.author.mention})")
+  emb.add_field(name="Канал",value=f"{before.channel.name} ({before.channel.mention})")
+  await channel.send(embed=emb)
 
 @bot.event
 async def on_slash_command_error(inter,error):

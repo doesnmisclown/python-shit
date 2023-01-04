@@ -1,4 +1,4 @@
-from disnake.ext import commands
+from disnake.ext import commands,tasks
 import disnake, traceback, aiohttp, hashlib, re, string, io
 from datetime import timedelta, date
 from textwrap import indent
@@ -17,6 +17,7 @@ class JaenCat(commands.InteractionBot):
     def __init__(self):
         intents = disnake.Intents.default()
         intents.message_content = True
+        intents.members = True
         super().__init__(
             intents=intents,
             test_guilds=[812396114648498196]
@@ -71,11 +72,6 @@ class Starboard(commands.Cog):
 
 bot = JaenCat()
 
-
-@bot.event
-async def on_ready():
-    await bot.change_presence(activity=disnake.Game("фантик лапкой"))
-    bot.add_cog(Starboard(bot))
 
 @bot.slash_command(description="Отправить реплику от имени персонажа")
 @commands.bot_has_permissions(manage_webhooks=True)
@@ -316,8 +312,47 @@ async def on_message_edit(before,after):
   emb.add_field(name="Канал",value=f"{before.channel.name} ({before.channel.mention})")
   await channel.send(embed=emb)
 
+
+@bot.event
+async def on_invite_create(i):
+  await bot.get_channel(1058288394469380106).send(embed=disnake.Embed(title="Создан новый инвайт",description="\n".join([f"Код: {i.code}",f"Создатель: {i.inviter.name}#{i.inviter.discriminator}"])))
+  bot.invites.append([i.code,i.uses])
+
+@bot.event
+async def on_invite_delete(i):
+  for j in bot.invites:
+    if i.code == j[0]:
+      bot.invites.remove(j)
 @bot.event
 async def on_slash_command_error(inter,error):
   if isinstance(error,commands.BotMissingPermissions): return await inter.response.send_message(f"Недостаточно прав у бота.\nНеобходимые права: {''.join(error.missing_permissions)}")
   raise error
+
+@bot.event
+async def on_member_join(member):
+  channel = bot.get_channel(1058288394469380106)
+  invites = await member.guild.invites()
+  invite = None
+  for i in invites:
+    for j in bot.invites:
+      if i.code == j[0] and i.uses > j[1]:
+        invite = i
+        break
+      if invite: break
+  emb = disnake.Embed(title="Участник зашёл на сервер")
+  emb.add_field(name="Кто зашёл",value=f"{member.name}#{member.discriminator} ({member.mention})")
+  if invite.inviter:
+    emb.add_field(name="Кто пригласил",value=f"{invite.inviter.name}#{invite.inviter.discriminator} ({invite.inviter.mention})")
+  else:
+    emb.add_field(name="Кто пригласил",value="Неизвестно")
+  await channel.send(embed=emb)
+@bot.event
+async def on_ready():
+    await bot.change_presence(activity=disnake.Game("фантик лапкой"))
+    bot.add_cog(Starboard(bot))
+    if not hasattr(bot,"invites"):
+      bot.invites = []
+      for i in await bot.guilds[0].invites():
+        bot.invites.append([i.code,i.uses])
+
 bot.run("")

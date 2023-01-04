@@ -1,7 +1,8 @@
 def lexer(c):
-  return c.split()
-
+  
 def run(code,*args):
+  
+  exit()
   variables = {}
   for i in range(len(args)):
     variables[f"arg{i+1}"] = args[i]
@@ -68,13 +69,13 @@ def run(code,*args):
 
 example = """
 # комментарий #
-core -> print ( " Hello World " )
-core -> update_var ( " pasha " 115 )
-core -> print ( $pasha )
+core->print("Hello World")
+core->update_var("pasha" 115)
+core->print($pasha)
 func hello
-core -> print ( " I'm in function " )
+core->print("I'm in function")
 endfunc
-custom -> hello ( )
-core -> print ( " It's working? " )
+custom->hello()
+core->print("It's working?")
 """
 run(example,"Hello")

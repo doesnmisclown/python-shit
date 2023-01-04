@@ -1,8 +1,8 @@
+# fucking lexer
+# currently realization is broken
 def lexer(c):
-  
+  return str.split()
 def run(code,*args):
-  
-  exit()
   variables = {}
   for i in range(len(args)):
     variables[f"arg{i+1}"] = args[i]

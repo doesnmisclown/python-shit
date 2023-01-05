@@ -1,7 +1,45 @@
+from string import ascii_lowercase,ascii_uppercase,digits
 # fucking lexer
 # currently realization is broken
+# upd: +- working
 def lexer(c):
-  return str.split()
+  comment = False
+  tokens = []
+  tokens2 = []
+  words = [False, []]
+  for i,e in enumerate(c):
+    if e == "#": comment = not comment
+    elif comment or e == "\n": continue
+    elif e in [*ascii_lowercase,*ascii_uppercase,*digits,"_"]:
+      words[0] = True
+      words[1].append(e)
+    else:
+      if words[0]:
+        tokens.append("".join(words[1]))
+        tokens.append(e)
+        words[1] = []
+        words[0] = False
+      else:
+        tokens.append(e)
+  quote = [False,[]]
+  for _,e in enumerate(tokens):
+    if e == "\"":
+      if quote[0]:
+        tokens2.append("".join(quote[1]))
+        quote[1] = []
+      tokens2.append("\"")
+      quote[0] = not quote[0]
+    elif quote[0]:
+      quote[1].append(e)
+    elif e == "-" and tokens[tokens.index(e)+1] == ">":
+      tokens2.append("->")
+    elif e == ">" and tokens[tokens.index(e)-1] == "-": continue
+    elif e == " ": continue
+    else: tokens2.append(e)
+  for i in tokens2:
+    if i == "\"": tokens2.remove(i)
+  return tokens2
+
 def run(code,*args):
   variables = {}
   for i in range(len(args)):
@@ -14,16 +52,15 @@ def run(code,*args):
      "custom": {}
   }
   bracket = [False,[]]
-  quote = [False,[]]
   function = [False,"main",[]]
   current = modules
   if type(code) == str: code = lexer(code)
-  comment = False
+  print(code)
   for i,c in enumerate(code):
     if c == "func":
       function[0] = True
       function[1] = code[i+1]
-    elif c == "endfunc":
+    elif c == "}":
       function[2] = function[2][1:]
       function_block = function[2]
       modules["custom"][function[1]] = lambda *args: run(" ".join(function_block),*args)
@@ -32,8 +69,6 @@ def run(code,*args):
       function[2] = []
     elif function[0]:
       function[2].append(c)
-    elif c == "#": comment = not comment
-    elif comment: continue
     elif c == "->":
       child = code[i+1]
       parent = code[i-1]
@@ -51,20 +86,13 @@ def run(code,*args):
       current(*bracket[1])
       bracket[1] = []
     elif bracket[0]:
-      if c == '"':
-        quote[0] = not quote[0]
-        if not quote[0]:
-          bracket[1].append(" ".join(quote[1]))
-          quote[1] = []
-      elif quote[0]:
-        quote[1].append(c)
-      elif c.startswith("$"):
-        vname = c[1:]
+      if c == "$":
+        vname = code[code.index(c)+1]
         if not vname in variables: raise Exception(f"{vname} is not defined")
         bracket[1].append(variables[vname])
       elif c.isdigit():
        c = int(c)
-       bracket[1].append(c)
+      bracket[1].append(c)
 
 
 example = """
@@ -72,10 +100,9 @@ example = """
 core->print("Hello World")
 core->update_var("pasha" 115)
 core->print($pasha)
-func hello
-core->print("I'm in function")
-endfunc
-custom->hello()
-core->print("It's working?")
+func hello {
+core->print("Im in function" $arg1)
+}
+custom->hello("hello")
 """
 run(example,"Hello")

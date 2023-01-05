@@ -339,12 +339,16 @@ async def on_member_join(member):
         invite = i
         break
       if invite: break
+  bot.invites = []
+  for i in invites:
+    bot.invites.append([i.code,i.uses])
   emb = disnake.Embed(title="Участник зашёл на сервер")
   emb.add_field(name="Кто зашёл",value=f"{member.name}#{member.discriminator} ({member.mention})")
   if invite.inviter:
     emb.add_field(name="Кто пригласил",value=f"{invite.inviter.name}#{invite.inviter.discriminator} ({invite.inviter.mention})")
   else:
     emb.add_field(name="Кто пригласил",value="Неизвестно")
+  emb.add_field(name="Какой инвайт",value=f"{invite.code} ({invite.uses} использований)")
   await channel.send(embed=emb)
 @bot.event
 async def on_ready():

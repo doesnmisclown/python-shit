@@ -350,6 +350,11 @@ async def on_member_join(member):
     emb.add_field(name="Кто пригласил",value="Неизвестно")
   emb.add_field(name="Какой инвайт",value=f"{invite.code} ({invite.uses} использований)")
   await channel.send(embed=emb)
+  
+@bot.event
+async def on_message(message):
+  channels = [1007962013080748045,1007962768902721616,1007963566365737020,1060470872609140807]
+  if message.channel.id in channels and len(message.attachments) < 1: await message.delete()
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=disnake.Game("фантик лапкой"))

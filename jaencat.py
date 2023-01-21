@@ -280,8 +280,36 @@ async def clear(inter, count: int = commands.Param(description="Количест
   await inter.response.defer()
   await inter.delete_original_response()
   await inter.channel.purge(limit=count)
-
-
+warn_roles = [1065987290066858034,1065987408623063070,1065987500109217843]
+def count_warns(member):
+  i = len(warn_roles)
+  for r in reversed(warn_roles):
+    r = disnake.utils.get(member.roles,id=r)
+    if not r:
+      i-=1
+      continue
+    return i
+  return 0
+      
+@bot.slash_command(description="Выдать предупреждение",default_member_permissions=disnake.Permissions(manage_roles=True))
+@commands.bot_has_permissions(manage_roles=True)
+async def warn(inter, member: disnake.Member = commands.Param(description="Участник которому необходимо выдать предупреждения"), reason: str = commands.Param(description="Причина, которая будет видна в журнале аудита")):
+  count = count_warns(member)
+  oneup_role = disnake.utils.get(inter.guild.roles,id=1065990753496596500)
+  prev_count = ""
+  next_count = ""
+  if oneup_role in member.roles:
+    prev_count = "Спасалка"
+    next_count = count
+    await member.remove_roles(oneup_role,reason="Выдача предупреждения по причине " + reason)
+  else:
+    prev_count = count
+    next_count = count + 1
+    if next_count > 3: next_count = 3
+    give_role = warn_roles[next_count-1]
+    give_role = disnake.utils.get(inter.guild.roles,id=give_role)
+    await member.add_roles(give_role,reason="Выдача предупреждения по причине " + reason)
+  await inter.response.send_message(content=f"{member.mention} получил предупреждение по причине {reason} ({prev_count} -> {next_count})")
 @bot.event
 async def on_message_delete(message):
   if message.author.bot: return
@@ -305,6 +333,7 @@ async def on_message_delete(message):
 @bot.event
 async def on_message_edit(before,after):
   if before.author.bot: return
+  if before.content == after.content: return
   channel = bot.get_channel(1058288394469380106)
   
   emb = disnake.Embed(title="Сообщение изменено",description=f"Старое сообщение:\n```{before.content.replace('`','`' + chr(8302))}```\nНовое сообщение:\n```{after.content.replace('`','`' + chr(8302))}```")

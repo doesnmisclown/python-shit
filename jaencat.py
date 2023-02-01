@@ -18,6 +18,7 @@ class JaenCat(commands.InteractionBot):
         intents = disnake.Intents.default()
         intents.message_content = True
         intents.members = True
+        intents.presences = True
         super().__init__(
             intents=intents,
             test_guilds=[812396114648498196]
@@ -310,6 +311,24 @@ async def warn(inter, member: disnake.Member = commands.Param(description="Уч�
     give_role = disnake.utils.get(inter.guild.roles,id=give_role)
     await member.add_roles(give_role,reason="Выдача предупреждения по причине " + reason)
   await inter.response.send_message(content=f"{member.mention} получил предупреждение по причине {reason} ({prev_count} -> {next_count})")
+  
+@bot.slash_command(description="Информация о сервере")
+async def server(inter):
+  emb = Embed(title=inter.guild.name)
+  emb.set_thumbnail(url=inter.guild.icon.url)
+  emb.add_field(name="Участники",value="\n".join([f"Всего: {len(inter.guild.members)}",f"Людей: {len(list(filter(lambda m: m.bot == False)))}",f"Ботов: {len(list(filter(lambda m: m.bot == True)))}"]))
+  emb.add_field(name="Статусы",value="\n".join([f"В сети: {len(list(filter(lambda m: m.status == 'online',inter.guild.members)))}",f"Не активен: {len(list(filter(lambda m: m.status == 'idle',inter.guild.members)))}",f"Не беспокоить: {len(list(filter(lambda m: m.status == 'dnd',inter.guild.members)))}",f"Не в сети: {len(list(filter(lambda m: m.status == 'offline',inter.guild.members)))}"]))
+  emb.add_field(name="Каналы",value="\n".join([f"Всего: {len(inter.guild.channels)}",f"Текстовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.text,inter.guild.channels)))}",f"Голосовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.voice,inter.guild.channels)))}"]))
+  emb.add_field(name="Владелец",value=f"{inter.guild.owner.name}#{inter.guild.owner.discriminator} ({inter.guild.owner.mention})")
+  emb.add_field(name="Дата создания",value=disnake.utils.format_dt(inter.guild.created_at) + "\n" + disnake.utils.format_dt(inter.guild.created_at,"R"))
+  await inter.response.send_message(embed=emb)
+  
+@bot.slash_command(description="Топ по сообщениям")
+async def leaders(inter, channel: disnake.TextChannel):
+  await i.response.defer()
+  top = {}
+  async for message in channel.history(limit=100):
+    
 @bot.event
 async def on_message_delete(message):
   if message.author.bot: return

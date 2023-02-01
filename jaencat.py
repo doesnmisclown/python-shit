@@ -1,5 +1,5 @@
 from disnake.ext import commands,tasks
-import disnake, traceback, aiohttp, hashlib, re, string, io
+import disnake, traceback, aiohttp, hashlib, re, string, io, os
 from datetime import timedelta, date
 from textwrap import indent
 
@@ -317,7 +317,7 @@ async def server(inter):
   emb = disnake.Embed(title=inter.guild.name)
   emb.set_thumbnail(url=inter.guild.icon.url)
   emb.add_field(name="Участники",value="\n".join([f"Всего: {len(inter.guild.members)}",f"Людей: {len(list(filter(lambda m: m.bot == False,inter.guild.members)))}",f"Ботов: {len(list(filter(lambda m: m.bot == True,inter.guild.members)))}"]))
-  emb.add_field(name="Статусы",value="\n".join([f"В сети: {len(list(filter(lambda m: m.status == 'online',inter.guild.members)))}",f"Не активен: {len(list(filter(lambda m: m.status == 'idle',inter.guild.members)))}",f"Не беспокоить: {len(list(filter(lambda m: m.status == 'dnd',inter.guild.members)))}",f"Не в сети: {len(list(filter(lambda m: m.status == 'offline',inter.guild.members)))}"]))
+  emb.add_field(name="Статусы",value="\n".join([f"В сети: {len(list(filter(lambda m: str(m.status) == 'online',inter.guild.members)))}",f"Не активен: {len(list(filter(lambda m: str(m.status) == 'idle',inter.guild.members)))}",f"Не беспокоить: {len(list(filter(lambda m: str(m.status) == 'dnd',inter.guild.members)))}",f"Не в сети: {len(list(filter(lambda m: str(m.status) == 'offline',inter.guild.members)))}"]))
   emb.add_field(name="Каналы",value="\n".join([f"Всего: {len(inter.guild.channels)}",f"Текстовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.text,inter.guild.channels)))}",f"Голосовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.voice,inter.guild.channels)))}"]))
   emb.add_field(name="Владелец",value=f"{inter.guild.owner.name}#{inter.guild.owner.discriminator} ({inter.guild.owner.mention})")
   emb.add_field(name="Дата создания",value=disnake.utils.format_dt(inter.guild.created_at) + "\n" + disnake.utils.format_dt(inter.guild.created_at,"R"))
@@ -425,4 +425,4 @@ async def on_ready():
       for i in await bot.guilds[0].invites():
         bot.invites.append([i.code,i.uses])
 
-bot.run("MTAwODM5MzMwMjUxMDQyNDE2NQ.G8O7w-.MkU127yxZN4eCyDbRGTEdiAg3po3UNUjmnKN8w")
+bot.run(os.getenv("TOKEN"))

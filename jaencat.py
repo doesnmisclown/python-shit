@@ -1,8 +1,8 @@
-from disnake.ext import commands,tasks
+from disnake.ext import commands, tasks
 import disnake, traceback, aiohttp, hashlib, re, string, io, os
 from datetime import timedelta, date
 from textwrap import indent
-
+from random import randint
 
 def bar(n, m, l):
     return "[" + ("#" * round(n / m * l)).ljust(l, " ") + "]"
@@ -19,10 +19,7 @@ class JaenCat(commands.InteractionBot):
         intents.message_content = True
         intents.members = True
         intents.presences = True
-        super().__init__(
-            intents=intents,
-            test_guilds=[812396114648498196]
-        )
+        super().__init__(intents=intents, test_guilds=[812396114648498196])
         self.rp_names = []
 
 
@@ -69,7 +66,7 @@ class Starboard(commands.Cog):
         elif reaction.message.id in self.cache:
             await self.cache[reaction.message.id].delete()
             self.cache.pop(reaction.message.id)
-      
+
 
 bot = JaenCat()
 
@@ -89,30 +86,50 @@ async def rp(
         await webhooks[0].send(text, username=character)
     await inter.response.send_message("Реплика отправлена", ephemeral=True)
 
-allowed_roles = [1008009505742782494,1008009618187886602,1008009905996845078,1008010042626293800,1008010258767171717,1008010366707568740,1008010503328645150,1008010629757542561,1008010761626472599,1008010860133892159,1008011059614974043,1008011282072469605,1008011429124788335,1008011616173953055]
+
+allowed_roles = [
+    1008009505742782494,
+    1008009618187886602,
+    1008009905996845078,
+    1008010042626293800,
+    1008010258767171717,
+    1008010366707568740,
+    1008010503328645150,
+    1008010629757542561,
+    1008010761626472599,
+    1008010860133892159,
+    1008011059614974043,
+    1008011282072469605,
+    1008011429124788335,
+    1008011616173953055,
+]
+
+
 @bot.slash_command(description="Выдача цветной или пинг роли")
 @commands.bot_has_permissions(manage_roles=True)
 async def claim(
     inter,
     role: disnake.Role = commands.Param(description="Разрешенная роль для выдачи"),
 ):
-  await inter.response.defer()
-  if not role.id in allowed_roles:
-    return await inter.edit_original_response(
+    await inter.response.defer()
+    if not role.id in allowed_roles:
+        return await inter.edit_original_response(
             content="Данной роли нету в списке разрешенных для выдачи"
         )
-  ping_roles = [1008011282072469605,1008011429124788335,1008011616173953055]
-  if not role.id in ping_roles:
-    for r in allowed_roles:
-      if r in ping_roles: continue
-      rr = inter.guild.get_role(r)
-      if rr in inter.user.roles and rr != role: await inter.user.remove_roles(rr)
-  if role in inter.user.roles:
-    await inter.user.remove_roles(role)
-    await inter.edit_original_response(content="Роль успешно убрана")
-  else:
-    await inter.user.add_roles(role)
-    await inter.edit_original_response(content="Роль успешно добавлена")
+    ping_roles = [1008011282072469605, 1008011429124788335, 1008011616173953055]
+    if not role.id in ping_roles:
+        for r in allowed_roles:
+            if r in ping_roles:
+                continue
+            rr = inter.guild.get_role(r)
+            if rr in inter.user.roles and rr != role:
+                await inter.user.remove_roles(rr)
+    if role in inter.user.roles:
+        await inter.user.remove_roles(role)
+        await inter.edit_original_response(content="Роль успешно убрана")
+    else:
+        await inter.user.add_roles(role)
+        await inter.edit_original_response(content="Роль успешно добавлена")
 
 
 @bot.slash_command(description="Показать картинки с котиками")
@@ -124,6 +141,7 @@ async def cat(inter):
             emb = disnake.Embed(title="Мяу!")
             emb.set_image(url="attachment://cat.png")
             await inter.edit_original_response(embed=emb, file=file)
+
 
 @bot.slash_command(
     description="Отправить нарушителей подумать о своем поведении",
@@ -266,7 +284,9 @@ async def survey(
         if not a:
             continue
         if len(a) > 80:
-          return await inter.response.send_message(content=f"Вариант ответа {i} слишком длинный. Сократите его")
+            return await inter.response.send_message(
+                content=f"Вариант ответа {i} слишком длинный. Сократите его"
+            )
         answers[i] = f"{a} (0)"
     view.add_item(SurveySelect(answers))
     emb = disnake.Embed(
@@ -274,155 +294,321 @@ async def survey(
     )
     await inter.response.send_message(embed=emb, view=view)
 
-@bot.slash_command(description="Очистка сообщений",default_member_permissions=disnake.Permissions(manage_messages=True))
+
+@bot.slash_command(
+    description="Очистка сообщений",
+    default_member_permissions=disnake.Permissions(manage_messages=True),
+)
 @commands.bot_has_permissions(manage_messages=True)
-async def clear(inter, count: int = commands.Param(description="Количество сообщений для удаления")):
-  if count > 100 or count < 1: return await inter.response.send_message(content="Можно только от 1 до 100 сообщений")
-  await inter.response.defer()
-  await inter.delete_original_response()
-  await inter.channel.purge(limit=count)
-warn_roles = [1065987290066858034,1065987408623063070,1065987500109217843]
+async def clear(
+    inter, count: int = commands.Param(description="Количество сообщений для удаления")
+):
+    if count > 100 or count < 1:
+        return await inter.response.send_message(
+            content="Можно только от 1 до 100 сообщений"
+        )
+    await inter.response.defer()
+    await inter.delete_original_response()
+    await inter.channel.purge(limit=count)
+
+
+warn_roles = [1065987290066858034, 1065987408623063070, 1065987500109217843]
+
+
 def count_warns(member):
-  i = len(warn_roles)
-  for r in reversed(warn_roles):
-    r = disnake.utils.get(member.roles,id=r)
-    if not r:
-      i-=1
-      continue
-    return i
-  return 0
-      
-@bot.slash_command(description="Выдать предупреждение",default_member_permissions=disnake.Permissions(manage_roles=True))
+    i = len(warn_roles)
+    for r in reversed(warn_roles):
+        r = disnake.utils.get(member.roles, id=r)
+        if not r:
+            i -= 1
+            continue
+        return i
+    return 0
+
+
+@bot.slash_command(
+    description="Выдать предупреждение",
+    default_member_permissions=disnake.Permissions(manage_roles=True),
+)
 @commands.bot_has_permissions(manage_roles=True)
-async def warn(inter, member: disnake.Member = commands.Param(description="Участник которому необходимо выдать предупреждения"), reason: str = commands.Param(description="Причина, которая будет видна в журнале аудита")):
-  count = count_warns(member)
-  oneup_role = disnake.utils.get(inter.guild.roles,id=1065990753496596500)
-  prev_count = ""
-  next_count = ""
-  if oneup_role in member.roles:
-    prev_count = "Спасалка"
-    next_count = count
-    await member.remove_roles(oneup_role,reason="Выдача предупреждения по причине " + reason)
-  else:
-    prev_count = count
-    next_count = count + 1
-    if next_count > 3: next_count = 3
-    give_role = warn_roles[next_count-1]
-    give_role = disnake.utils.get(inter.guild.roles,id=give_role)
-    await member.add_roles(give_role,reason="Выдача предупреждения по причине " + reason)
-  await inter.response.send_message(content=f"{member.mention} получил предупреждение по причине {reason} ({prev_count} -> {next_count})")
-  
+async def warn(
+    inter,
+    member: disnake.Member = commands.Param(
+        description="Участник которому необходимо выдать предупреждения"
+    ),
+    reason: str = commands.Param(
+        description="Причина, которая будет видна в журнале аудита"
+    ),
+):
+    count = count_warns(member)
+    oneup_role = disnake.utils.get(inter.guild.roles, id=1065990753496596500)
+    prev_count = ""
+    next_count = ""
+    if oneup_role in member.roles:
+        prev_count = "Спасалка"
+        next_count = count
+        await member.remove_roles(
+            oneup_role, reason="Выдача предупреждения по причине " + reason
+        )
+    else:
+        prev_count = count
+        next_count = count + 1
+        if next_count > 3:
+            next_count = 3
+        give_role = warn_roles[next_count - 1]
+        give_role = disnake.utils.get(inter.guild.roles, id=give_role)
+        await member.add_roles(
+            give_role, reason="Выдача предупреждения по причине " + reason
+        )
+    await inter.response.send_message(
+        content=f"{member.mention} получил предупреждение по причине {reason} ({prev_count} -> {next_count})"
+    )
+
+
 @bot.slash_command(description="Информация о сервере")
 async def server(inter):
-  emb = disnake.Embed(title=inter.guild.name)
-  emb.set_thumbnail(url=inter.guild.icon.url)
-  emb.add_field(name="Участники",value="\n".join([f"Всего: {len(inter.guild.members)}",f"Людей: {len(list(filter(lambda m: m.bot == False,inter.guild.members)))}",f"Ботов: {len(list(filter(lambda m: m.bot == True,inter.guild.members)))}"]))
-  emb.add_field(name="Статусы",value="\n".join([f"В сети: {len(list(filter(lambda m: str(m.status) == 'online',inter.guild.members)))}",f"Не активен: {len(list(filter(lambda m: str(m.status) == 'idle',inter.guild.members)))}",f"Не беспокоить: {len(list(filter(lambda m: str(m.status) == 'dnd',inter.guild.members)))}",f"Не в сети: {len(list(filter(lambda m: str(m.status) == 'offline',inter.guild.members)))}"]))
-  emb.add_field(name="Каналы",value="\n".join([f"Всего: {len(inter.guild.channels)}",f"Текстовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.text,inter.guild.channels)))}",f"Голосовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.voice,inter.guild.channels)))}"]))
-  emb.add_field(name="Владелец",value=f"{inter.guild.owner.name}#{inter.guild.owner.discriminator} ({inter.guild.owner.mention})")
-  emb.add_field(name="Дата создания",value=disnake.utils.format_dt(inter.guild.created_at) + "\n" + disnake.utils.format_dt(inter.guild.created_at,"R"))
-  await inter.response.send_message(embed=emb)
-  
+    emb = disnake.Embed(title=inter.guild.name)
+    emb.set_thumbnail(url=inter.guild.icon.url)
+    emb.add_field(
+        name="Участники",
+        value="\n".join(
+            [
+                f"Всего: {len(inter.guild.members)}",
+                f"Людей: {len(list(filter(lambda m: m.bot == False,inter.guild.members)))}",
+                f"Ботов: {len(list(filter(lambda m: m.bot == True,inter.guild.members)))}",
+            ]
+        ),
+    )
+    emb.add_field(
+        name="Статусы",
+        value="\n".join(
+            [
+                f"В сети: {len(list(filter(lambda m: str(m.status) == 'online',inter.guild.members)))}",
+                f"Не активен: {len(list(filter(lambda m: str(m.status) == 'idle',inter.guild.members)))}",
+                f"Не беспокоить: {len(list(filter(lambda m: str(m.status) == 'dnd',inter.guild.members)))}",
+                f"Не в сети: {len(list(filter(lambda m: str(m.status) == 'offline',inter.guild.members)))}",
+            ]
+        ),
+    )
+    emb.add_field(
+        name="Каналы",
+        value="\n".join(
+            [
+                f"Всего: {len(inter.guild.channels)}",
+                f"Текстовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.text,inter.guild.channels)))}",
+                f"Голосовых: {len(list(filter(lambda c: c.type == disnake.ChannelType.voice,inter.guild.channels)))}",
+            ]
+        ),
+    )
+    emb.add_field(
+        name="Владелец",
+        value=f"{inter.guild.owner.name}#{inter.guild.owner.discriminator} ({inter.guild.owner.mention})",
+    )
+    emb.add_field(
+        name="Дата создания",
+        value=disnake.utils.format_dt(inter.guild.created_at)
+        + "\n"
+        + disnake.utils.format_dt(inter.guild.created_at, "R"),
+    )
+    await inter.response.send_message(embed=emb)
+
+
 @bot.slash_command(description="Топ по сообщениям")
 async def leaders(inter, channel: disnake.TextChannel):
-  await inter.response.defer()
-  top = {}
-  async for message in channel.history(limit=100):
-    aid = message.author.id
-    if message.author.bot or message.is_system(): continue
-    if not aid in top:
-      top[aid] = 1
-    else:
-      top[aid] += 1
-  top = dict(sorted(top.items(),key=lambda i: i[1],reverse=True))
-  description = ""
-  for k,v in top.items():
-    description += f"<@{k}>\n{bar(v,100,20)}\n"
-  emb = disnake.Embed(title="Топ по сообщениям",description=description)
-  await inter.edit_original_response(embed=emb)
+    await inter.response.defer()
+    top = {}
+    async for message in channel.history(limit=100):
+        aid = message.author.id
+        if message.author.bot or message.is_system():
+            continue
+        if not aid in top:
+            top[aid] = 1
+        else:
+            top[aid] += 1
+    top = dict(sorted(top.items(), key=lambda i: i[1], reverse=True))
+    description = ""
+    for k, v in top.items():
+        description += f"<@{k}>\n{bar(v,100,20)}\n"
+    emb = disnake.Embed(title="Топ по сообщениям", description=description)
+    await inter.edit_original_response(embed=emb)
 
 
+@bot.slash_command(description="Поиграем в сапёр?")
+async def minesweeper(inter):
+    karta = [["" for _ in range(10)] for _ in range(10)]
+    numbers = {
+        0: ":zero:",
+        1: ":one:",
+        2: ":two:",
+        3: ":three:",
+        4: ":four:",
+        5: ":five:",
+        6: ":six:",
+        7: ":seven:",
+        8: ":eight:",
+        9: ":nine:",
+    }
+    def scanaround(cx, cy):
+      count = 0
+      for dx, dy in [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]:
+        x, y = cx + dx, cy + dy
+        if x < 0 or x > 9 or y < 0 or y > 9: continue
+        if karta[x][y] == ":bomb:": count += 1
+      return count
+
+    for i in range(15):
+      rx = randint(0,9)
+      ry = randint(0,9)
+      karta[rx][ry] = ":bomb:"
+    description = ""
+    for i in range(len(karta)):
+      for j in range(len(karta[i])):
+        if karta[i][j] == ":bomb:": continue
+        count = scanaround(i,j)
+        karta[i][j] = numbers[count]
+      description += "".join(map(lambda e: f"||{e}||",karta[i])) + "\n"
+    emb = disnake.Embed(title="Сапёр", description=description)
+    await inter.response.send_message(embed=emb)
+ 
 @bot.event
 async def on_message_delete(message):
-  if message.author.bot: return
-  channel = bot.get_channel(1058288394469380106)
-  entry = await message.guild.audit_logs(limit=1,action=disnake.AuditLogAction.message_delete).flatten()
-  who = None
-  if entry[0]:
-    entry = entry[0]
-  else:
-    who = "Автор или бот"
-  if entry.target.id == message.author.id:
-    who = f"{entry.user.name}#{entry.user.discriminator} ({entry.user.mention})"
-  else:
-    who = "Автор или бот"
-  emb = disnake.Embed(title="Сообщение удалено",description=f"```{message.content.replace('`','`'+ chr(8302))}```")
-  emb.add_field(name="Автор",value=f"{message.author.name}#{message.author.discriminator} ({message.author.mention})")
-  emb.add_field("Кто удалил",who)
-  emb.add_field(name="Канал",value=f"{message.channel.name} ({message.channel.mention})")
-  await channel.send(embed=emb)
-  
+    if message.author.bot:
+        return
+    channel = bot.get_channel(1058288394469380106)
+    entry = await message.guild.audit_logs(
+        limit=1, action=disnake.AuditLogAction.message_delete
+    ).flatten()
+    who = None
+    if entry[0]:
+        entry = entry[0]
+    else:
+        who = "Автор или бот"
+    if entry.target.id == message.author.id:
+        who = f"{entry.user.name}#{entry.user.discriminator} ({entry.user.mention})"
+    else:
+        who = "Автор или бот"
+    emb = disnake.Embed(
+        title="Сообщение удалено",
+        description=f"```{message.content.replace('`','`'+ chr(8302))}```",
+    )
+    emb.add_field(
+        name="Автор",
+        value=f"{message.author.name}#{message.author.discriminator} ({message.author.mention})",
+    )
+    emb.add_field("Кто удалил", who)
+    emb.add_field(
+        name="Канал", value=f"{message.channel.name} ({message.channel.mention})"
+    )
+    await channel.send(embed=emb)
+
+
 @bot.event
-async def on_message_edit(before,after):
-  if before.author.bot: return
-  if before.content == after.content: return
-  channel = bot.get_channel(1058288394469380106)
-  
-  emb = disnake.Embed(title="Сообщение изменено",description=f"Старое сообщение:\n```{before.content.replace('`','`' + chr(8302))}```\nНовое сообщение:\n```{after.content.replace('`','`' + chr(8302))}```")
-  emb.add_field(name="Автор",value=f"{before.author.name}#{before.author.discriminator} ({before.author.mention})")
-  emb.add_field(name="Канал",value=f"{before.channel.name} ({before.channel.mention})")
-  await channel.send(embed=emb)
+async def on_message_edit(before, after):
+    if before.author.bot:
+        return
+    if before.content == after.content:
+        return
+    channel = bot.get_channel(1058288394469380106)
+
+    emb = disnake.Embed(
+        title="Сообщение изменено",
+        description=f"Старое сообщение:\n```{before.content.replace('`','`' + chr(8302))}```\nНовое сообщение:\n```{after.content.replace('`','`' + chr(8302))}```",
+    )
+    emb.add_field(
+        name="Автор",
+        value=f"{before.author.name}#{before.author.discriminator} ({before.author.mention})",
+    )
+    emb.add_field(
+        name="Канал", value=f"{before.channel.name} ({before.channel.mention})"
+    )
+    await channel.send(embed=emb)
 
 
 @bot.event
 async def on_invite_create(i):
-  await bot.get_channel(1058288394469380106).send(embed=disnake.Embed(title="Создан новый инвайт",description="\n".join([f"Код: {i.code}",f"Создатель: {i.inviter.name}#{i.inviter.discriminator}"])))
-  bot.invites.append([i.code,i.uses])
+    await bot.get_channel(1058288394469380106).send(
+        embed=disnake.Embed(
+            title="Создан новый инвайт",
+            description="\n".join(
+                [
+                    f"Код: {i.code}",
+                    f"Создатель: {i.inviter.name}#{i.inviter.discriminator}",
+                ]
+            ),
+        )
+    )
+    bot.invites.append([i.code, i.uses])
+
 
 @bot.event
 async def on_invite_delete(i):
-  for j in bot.invites:
-    if i.code == j[0]:
-      bot.invites.remove(j)
+    for j in bot.invites:
+        if i.code == j[0]:
+            bot.invites.remove(j)
+
+
 @bot.event
-async def on_slash_command_error(inter,error):
-  if isinstance(error,commands.BotMissingPermissions): return await inter.response.send_message(f"Недостаточно прав у бота.\nНеобходимые права: {''.join(error.missing_permissions)}")
-  raise error
+async def on_slash_command_error(inter, error):
+    if isinstance(error, commands.BotMissingPermissions):
+        return await inter.response.send_message(
+            f"Недостаточно прав у бота.\nНеобходимые права: {''.join(error.missing_permissions)}"
+        )
+    raise error
+
 
 @bot.event
 async def on_member_join(member):
-  channel = bot.get_channel(1058288394469380106)
-  invites = await member.guild.invites()
-  invite = None
-  for i in invites:
-    for j in bot.invites:
-      if i.code == j[0] and i.uses > j[1]:
-        invite = i
-        break
-      if invite: break
-  bot.invites = []
-  for i in invites:
-    bot.invites.append([i.code,i.uses])
-  emb = disnake.Embed(title="Участник зашёл на сервер")
-  emb.add_field(name="Кто зашёл",value=f"{member.name}#{member.discriminator} ({member.mention})")
-  if invite.inviter:
-    emb.add_field(name="Кто пригласил",value=f"{invite.inviter.name}#{invite.inviter.discriminator} ({invite.inviter.mention})")
-  else:
-    emb.add_field(name="Кто пригласил",value="Неизвестно")
-  emb.add_field(name="Какой инвайт",value=f"{invite.code} ({invite.uses} использований)")
-  await channel.send(embed=emb)
-  
+    channel = bot.get_channel(1058288394469380106)
+    invites = await member.guild.invites()
+    invite = None
+    for i in invites:
+        for j in bot.invites:
+            if i.code == j[0] and i.uses > j[1]:
+                invite = i
+                break
+            if invite:
+                break
+    bot.invites = []
+    for i in invites:
+        bot.invites.append([i.code, i.uses])
+    emb = disnake.Embed(title="Участник зашёл на сервер")
+    emb.add_field(
+        name="Кто зашёл",
+        value=f"{member.name}#{member.discriminator} ({member.mention})",
+    )
+    if invite.inviter:
+        emb.add_field(
+            name="Кто пригласил",
+            value=f"{invite.inviter.name}#{invite.inviter.discriminator} ({invite.inviter.mention})",
+        )
+    else:
+        emb.add_field(name="Кто пригласил", value="Неизвестно")
+    emb.add_field(
+        name="Какой инвайт", value=f"{invite.code} ({invite.uses} использований)"
+    )
+    await channel.send(embed=emb)
+
+
 @bot.event
 async def on_message(message):
-  channels = [1007962013080748045,1007962768902721616,1007963566365737020,1060470872609140807]
-  if message.channel.id in channels and len(message.attachments) < 1: await message.delete()
+    channels = [
+        1007962013080748045,
+        1007962768902721616,
+        1007963566365737020,
+        1060470872609140807,
+    ]
+    if message.channel.id in channels and len(message.attachments) < 1:
+        await message.delete()
+
+
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=disnake.Game("фантик лапкой"))
     bot.add_cog(Starboard(bot))
-    if not hasattr(bot,"invites"):
-      bot.invites = []
-      for i in await bot.guilds[0].invites():
-        bot.invites.append([i.code,i.uses])
+    if not hasattr(bot, "invites"):
+        bot.invites = []
+        for i in await bot.guilds[0].invites():
+            bot.invites.append([i.code, i.uses])
+
 
 bot.run(os.getenv("TOKEN"))

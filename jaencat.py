@@ -3,7 +3,8 @@ import disnake, traceback, aiohttp, hashlib, re, string, io, os
 from datetime import timedelta, date
 from textwrap import indent
 from random import randint
-
+import akinator
+from akinator.async_aki import Akinator
 def bar(n, m, l):
     return "[" + ("#" * round(n / m * l)).ljust(l, " ") + "]"
 
@@ -470,6 +471,40 @@ async def minesweeper(inter):
     emb = disnake.Embed(title="Сапёр", description=description)
     await inter.response.send_message(embed=emb)
  
+ 
+@bot.slash_command(name="aki",description="Игра в Акинатора")
+async def akigame(inter):
+  await inter.response.defer()
+  aki = Akinator()
+  question = await aki.start_game(language="ru",child_mode=not inter.channel.nsfw)
+  components = [[
+    disnake.ui.Button(label="1",custom_id="yes"),
+    disnake.ui.Button(label="2",custom_id="no"),
+    disnake.ui.Button(label="3",custom_id="idk"),
+    disnake.ui.Button(label="4",custom_id="probably"),
+    disnake.ui.Button(label="5",custom_id="pn")
+    ],
+    [
+      disnake.ui.Button(label="<-",custom_id="back")
+    ]
+  ]
+  while aki.progression <= 80:
+    emb = disnake.Embed(title="Акинатор", description="\n".join([f"Шаг: {aki.step}",f"Шанс угадывания: {bar(aki.progression,100,20)}",f"Вопрос: {question}","Ответы:","1. Да","2. Нет", "3. Не знаю", "4. Вероятно","5. Скорее нет, не совсем"]))
+    msg = await inter.edit_original_response(embed=emb,components=components)
+    binter = await bot.wait_for("button_click",check=lambda binter: binter.message.id == msg.id and binter.author.id == inter.author.id)
+    await binter.response.defer()
+    if binter.component.custom_id == "back":
+      try:
+        question = await aki.back()
+      except akinator.CantGoBackAnyFurther: pass
+    else:
+      question = await aki.answer(binter.component.custom_id)
+  await aki.win()
+  emb = disnake.Embed(title=aki.first_guess['name'],description=aki.first_guess['description'])
+  emb.set_image(url=aki.first_guess["absolute_picture_path"])
+  await inter.edit_original_response(embed=emb,components=[])
+  await aki.close()
+    
 @bot.event
 async def on_message_delete(message):
     if message.author.bot:

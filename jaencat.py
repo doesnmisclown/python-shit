@@ -6,7 +6,7 @@ from random import randint
 import akinator
 from akinator.async_aki import Akinator
 def bar(n, m, l):
-    return "[" + ("#" * round(n / m * l)).ljust(l, " ") + "]"
+    return ("🟦" * round(n / m * l)).ljust(l, "⬛")
 
 
 class PersistentView(disnake.ui.View):
@@ -429,7 +429,7 @@ async def leaders(inter, channel: disnake.TextChannel):
     top = dict(sorted(top.items(), key=lambda i: i[1], reverse=True))
     description = ""
     for k, v in top.items():
-        description += f"<@{k}>\n{bar(v,100,20)}\n"
+        description += f"<@{k}>\n{bar(v,100,10)} {v}%\n"
     emb = disnake.Embed(title="Топ по сообщениям", description=description)
     await inter.edit_original_response(embed=emb)
 
@@ -489,7 +489,7 @@ async def akigame(inter):
     ]
   ]
   while aki.progression <= 80:
-    emb = disnake.Embed(title="Акинатор", description="\n".join([f"Шаг: {aki.step}",f"Шанс угадывания: {bar(aki.progression,100,20)}",f"Вопрос: {question}","Ответы:","1. Да","2. Нет", "3. Не знаю", "4. Вероятно","5. Скорее нет, не совсем"]))
+    emb = disnake.Embed(title="Акинатор", description="\n".join([f"Шаг: {aki.step}",f"Шанс угадывания: {bar(aki.progression,100,5)}",f"Вопрос: {question}","Ответы:","1. Да","2. Нет", "3. Не знаю", "4. Вероятно","5. Скорее нет, не совсем"]))
     msg = await inter.edit_original_response(embed=emb,components=components)
     binter = await bot.wait_for("button_click",check=lambda binter: binter.message.id == msg.id and binter.author.id == inter.author.id)
     await binter.response.defer()

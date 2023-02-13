@@ -16,10 +16,7 @@ class PersistentView(disnake.ui.View):
 
 class JaenCat(commands.InteractionBot):
     def __init__(self):
-        intents = disnake.Intents.default()
-        intents.message_content = True
-        intents.members = True
-        intents.presences = True
+        intents = disnake.Intents.all()
         super().__init__(intents=intents, test_guilds=[812396114648498196])
         self.rp_names = []
 

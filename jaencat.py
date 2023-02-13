@@ -5,13 +5,39 @@ from textwrap import indent
 from random import randint
 import akinator
 from akinator.async_aki import Akinator
+
+# Configuration
+starboard_channel = 1010578321714724925
+allowed_roles = [
+    1008009505742782494,
+    1008009618187886602,
+    1008009905996845078,
+    1008010042626293800,
+    1008010258767171717,
+    1008010366707568740,
+    1008010503328645150,
+    1008010629757542561,
+    1008010761626472599,
+    1008010860133892159,
+    1008011059614974043,
+    1008011282072469605,
+    1008011429124788335,
+    1008011616173953055,
+]
+ping_roles = [1008011282072469605, 1008011429124788335, 1008011616173953055]
+warn_roles = [1065987290066858034, 1065987408623063070, 1065987500109217843]
+one_up_role_id = 1065990753496596500
+logger_channel = 1058288394469380106
+image_only_channels = [
+        1007962013080748045,
+        1007962768902721616,
+        1007963566365737020,
+        1060470872609140807,
+]
+
+# End of configuration
 def bar(n, m, l):
     return ("🟦" * round(n / m * l)).ljust(l, "⬛")
-
-
-class PersistentView(disnake.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
 
 
 class JaenCat(commands.InteractionBot):
@@ -24,7 +50,7 @@ class JaenCat(commands.InteractionBot):
 class Starboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel = 1010578321714724925
+        self.channel = starboard_channel
         self.emoji = "⭐"
         self.cache = {}
 
@@ -65,6 +91,7 @@ class Starboard(commands.Cog):
             await self.cache[reaction.message.id].delete()
             self.cache.pop(reaction.message.id)
 
+
 bot = JaenCat()
 
 
@@ -84,24 +111,6 @@ async def rp(
     await inter.response.send_message("Реплика отправлена", ephemeral=True)
 
 
-allowed_roles = [
-    1008009505742782494,
-    1008009618187886602,
-    1008009905996845078,
-    1008010042626293800,
-    1008010258767171717,
-    1008010366707568740,
-    1008010503328645150,
-    1008010629757542561,
-    1008010761626472599,
-    1008010860133892159,
-    1008011059614974043,
-    1008011282072469605,
-    1008011429124788335,
-    1008011616173953055,
-]
-
-
 @bot.slash_command(description="Выдача цветной или пинг роли")
 @commands.bot_has_permissions(manage_roles=True)
 async def claim(
@@ -113,7 +122,6 @@ async def claim(
         return await inter.edit_original_response(
             content="Данной роли нету в списке разрешенных для выдачи"
         )
-    ping_roles = [1008011282072469605, 1008011429124788335, 1008011616173953055]
     if not role.id in ping_roles:
         for r in allowed_roles:
             if r in ping_roles:
@@ -180,7 +188,9 @@ async def ship(
     h.update(str.encode(str(user1.id + user2.id)))
     percent = int(h.hexdigest(), 16) % 100
     emb = disnake.Embed(
-        title="Совместимость", description=f"{user1} и {user2} совместимы на {percent}%"
+        title="Совместимость",
+        description=f"{user1} и {user2} совместимы на {percent}%\n"
+        + bar(percent, 100, 10),
     )
     await inter.response.send_message(embed=emb)
 
@@ -257,7 +267,7 @@ class SurveySelect(disnake.ui.StringSelect):
             label.split("(")[0] + "(" + str(num) + ")"
         )
         emb = disnake.Embed(title="Внимание, опрос", description=description)
-        view = PersistentView()
+        view = disnake.ui.View()
         answers = map(
             lambda p: p.label, inter.message.components[0].children[0].options
         )
@@ -275,7 +285,7 @@ async def survey(
     a3: str = commands.Param(description="Третий вариант", default=None),
     a4: str = commands.Param(description="Первый вариант", default=None),
 ):
-    view = PersistentView()
+    view = disnake.ui.View()
     answers = [a1, a2, a3, a4]
     for i, a in enumerate(answers):
         if not a:
@@ -309,9 +319,6 @@ async def clear(
     await inter.channel.purge(limit=count)
 
 
-warn_roles = [1065987290066858034, 1065987408623063070, 1065987500109217843]
-
-
 def count_warns(member):
     i = len(warn_roles)
     for r in reversed(warn_roles):
@@ -338,7 +345,7 @@ async def warn(
     ),
 ):
     count = count_warns(member)
-    oneup_role = disnake.utils.get(inter.guild.roles, id=1065990753496596500)
+    oneup_role = disnake.utils.get(inter.guild.roles, id=one_up_role_id)
     prev_count = ""
     next_count = ""
     if oneup_role in member.roles:
@@ -445,67 +452,102 @@ async def minesweeper(inter):
         8: ":eight:",
         9: ":nine:",
     }
+
     def scanaround(cx, cy):
-      count = 0
-      for dx, dy in [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]:
-        x, y = cx + dx, cy + dy
-        if x < 0 or x > 9 or y < 0 or y > 9: continue
-        if karta[x][y] == ":bomb:": count += 1
-      return count
+        count = 0
+        for dx, dy in [
+            (1, 0),
+            (1, 1),
+            (0, 1),
+            (-1, 1),
+            (-1, 0),
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+        ]:
+            x, y = cx + dx, cy + dy
+            if x < 0 or x > 9 or y < 0 or y > 9:
+                continue
+            if karta[x][y] == ":bomb:":
+                count += 1
+        return count
 
     for i in range(15):
-      rx = randint(0,9)
-      ry = randint(0,9)
-      karta[rx][ry] = ":bomb:"
+        rx = randint(0, 9)
+        ry = randint(0, 9)
+        karta[rx][ry] = ":bomb:"
     description = ""
     for i in range(len(karta)):
-      for j in range(len(karta[i])):
-        if karta[i][j] == ":bomb:": continue
-        count = scanaround(i,j)
-        karta[i][j] = numbers[count]
-      description += "".join(map(lambda e: f"||{e}||",karta[i])) + "\n"
+        for j in range(len(karta[i])):
+            if karta[i][j] == ":bomb:":
+                continue
+            count = scanaround(i, j)
+            karta[i][j] = numbers[count]
+        description += "".join(map(lambda e: f"||{e}||", karta[i])) + "\n"
     emb = disnake.Embed(title="Сапёр", description=description)
     await inter.response.send_message(embed=emb)
- 
- 
-@bot.slash_command(name="aki",description="Игра в Акинатора")
+
+
+@bot.slash_command(name="aki", description="Игра в Акинатора")
 async def akigame(inter):
-  await inter.response.defer()
-  aki = Akinator()
-  question = await aki.start_game(language="ru",child_mode=not inter.channel.nsfw)
-  components = [[
-    disnake.ui.Button(label="1",custom_id="yes"),
-    disnake.ui.Button(label="2",custom_id="no"),
-    disnake.ui.Button(label="3",custom_id="idk"),
-    disnake.ui.Button(label="4",custom_id="probably"),
-    disnake.ui.Button(label="5",custom_id="pn")
-    ],
-    [
-      disnake.ui.Button(label="<-",custom_id="back")
+    await inter.response.defer()
+    aki = Akinator()
+    question = await aki.start_game(language="ru", child_mode=not inter.channel.nsfw)
+    components = [
+        [
+            disnake.ui.Button(label="1", custom_id="yes"),
+            disnake.ui.Button(label="2", custom_id="no"),
+            disnake.ui.Button(label="3", custom_id="idk"),
+            disnake.ui.Button(label="4", custom_id="probably"),
+            disnake.ui.Button(label="5", custom_id="pn"),
+        ],
+        [disnake.ui.Button(label="<-", custom_id="back")],
     ]
-  ]
-  while aki.progression <= 80:
-    emb = disnake.Embed(title="Акинатор", description="\n".join([f"Шаг: {aki.step}",f"Шанс угадывания: {bar(aki.progression,100,5)}",f"Вопрос: {question}","Ответы:","1. Да","2. Нет", "3. Не знаю", "4. Вероятно","5. Скорее нет, не совсем"]))
-    msg = await inter.edit_original_response(embed=emb,components=components)
-    binter = await bot.wait_for("button_click",check=lambda binter: binter.message.id == msg.id and binter.author.id == inter.author.id)
-    await binter.response.defer()
-    if binter.component.custom_id == "back":
-      try:
-        question = await aki.back()
-      except akinator.CantGoBackAnyFurther: pass
-    else:
-      question = await aki.answer(binter.component.custom_id)
-  await aki.win()
-  emb = disnake.Embed(title=aki.first_guess['name'],description=aki.first_guess['description'])
-  emb.set_image(url=aki.first_guess["absolute_picture_path"])
-  await inter.edit_original_response(embed=emb,components=[])
-  await aki.close()
-    
+    while aki.progression <= 80:
+        emb = disnake.Embed(
+            title="Акинатор",
+            description="\n".join(
+                [
+                    f"Шаг: {aki.step}",
+                    f"Шанс угадывания: {bar(aki.progression,100,5)}",
+                    f"Вопрос: {question}",
+                    "Ответы:",
+                    "1. Да",
+                    "2. Нет",
+                    "3. Не знаю",
+                    "4. Вероятно",
+                    "5. Скорее нет, не совсем",
+                ]
+            ),
+        )
+        msg = await inter.edit_original_response(embed=emb, components=components)
+        binter = await bot.wait_for(
+            "button_click",
+            check=lambda binter: binter.message.id == msg.id
+            and binter.author.id == inter.author.id,
+        )
+        await binter.response.defer()
+        if binter.component.custom_id == "back":
+            try:
+                question = await aki.back()
+            except akinator.CantGoBackAnyFurther:
+                pass
+        else:
+            question = await aki.answer(binter.component.custom_id)
+    await aki.win()
+    emb = disnake.Embed(
+        title=aki.first_guess["name"], description=aki.first_guess["description"]
+    )
+    emb.set_image(url=aki.first_guess["absolute_picture_path"])
+    await inter.edit_original_response(embed=emb, components=[])
+    await aki.close()
+
+
 @bot.event
 async def on_message_delete(message):
     if message.author.bot:
         return
-    channel = bot.get_channel(1058288394469380106)
+    channel = bot.get_channel(logger_channel)
     entry = await message.guild.audit_logs(
         limit=1, action=disnake.AuditLogAction.message_delete
     ).flatten()
@@ -539,7 +581,7 @@ async def on_message_edit(before, after):
         return
     if before.content == after.content:
         return
-    channel = bot.get_channel(1058288394469380106)
+    channel = bot.get_channel(logger_channel)
 
     emb = disnake.Embed(
         title="Сообщение изменено",
@@ -557,7 +599,7 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_invite_create(i):
-    await bot.get_channel(1058288394469380106).send(
+    await bot.get_channel(logger_channel).send(
         embed=disnake.Embed(
             title="Создан новый инвайт",
             description="\n".join(
@@ -589,7 +631,7 @@ async def on_slash_command_error(inter, error):
 
 @bot.event
 async def on_member_join(member):
-    channel = bot.get_channel(1058288394469380106)
+    channel = bot.get_channel(logger_channel)
     invites = await member.guild.invites()
     invite = None
     for i in invites:
@@ -622,13 +664,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_message(message):
-    channels = [
-        1007962013080748045,
-        1007962768902721616,
-        1007963566365737020,
-        1060470872609140807,
-    ]
-    if message.channel.id in channels and len(message.attachments) < 1:
+    if message.channel.id in image_only_channels and len(message.attachments) < 1:
         await message.delete()
 
 

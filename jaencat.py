@@ -65,7 +65,6 @@ class Starboard(commands.Cog):
             await self.cache[reaction.message.id].delete()
             self.cache.pop(reaction.message.id)
 
-
 bot = JaenCat()
 
 

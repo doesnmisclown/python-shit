@@ -1,5 +1,4 @@
 import random
-nothing = 0
 clicks = 100
 difficult = 0
 items_list = ["Камень", "Уголь", "Железо", "Золото", "Алмаз"]
@@ -24,11 +23,9 @@ for i in range(len(items_list)):
 
 while True:
     print("\033[H\033[J", end="")
-    print("Инвентарь:")
     for i in enumerate(items):
         print(f"{i[1]} ({items[i[1]]} шт.)")
-    print("Действия:")
-    print(f"1. Добывать (осталось {clicks} прочности. Шанс добычи {round(100*1/(difficult+1))}%)(Сложность {difficult})")
+    print(f"1. Добывать (осталось {clicks} прочности)")
     for i in items.keys():
         ix = list(items.keys()).index(i)
         print(f"{ix + 2}. Продать {i} (+{((ix+1)*10)*items[i]})")
@@ -36,23 +33,11 @@ while True:
     if a == "q":
         exit()
     if a == "1":
-        if clicks < difficult:
-            for i in enumerate(items.keys()):
-                if items[i[1]] > 0:
-                    clicks += i[0] * items[i[1]] * 10
-                    items[i[1]] = 0
-            difficult+=1
-            if clicks < difficult:
-                #print("\033[H\033[J", end="")
-                print("Вы проиграли")
-                print("Статистика")
-                print(f"Сложность: {difficult}")
-                exit()
-        #clicks-=difficult+1
         chance = random.randint(0, difficult)
+        if clicks < 0: continue
         if chance != 0:
             clicks-=difficult
-            nothing+=1
+            if clicks < 0: clicks = 0
             continue
         else:
             rng_num = random.randint(0, max(ranges[-1]))

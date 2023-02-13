@@ -119,7 +119,9 @@ core->print("Hello World")
 core->update_var("pasha" 115)
 func hello {
 core->print("Func " $arg1)
+return $
 }
+
 custom->hello("hello")
 """
 run(example, "Hello")

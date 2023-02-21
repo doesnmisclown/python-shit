@@ -135,19 +135,8 @@ async def claim(
     else:
         await inter.user.add_roles(role)
         await inter.edit_original_response(content="Роль успешно добавлена")
-
-
-@bot.slash_command(description="Показать картинки с котиками")
-async def cat(inter):
-    await inter.response.defer()
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://cataas.com/cat") as resp:
-            file = disnake.File(io.BytesIO(await resp.read()), "cat.png")
-            emb = disnake.Embed(title="Мяу!")
-            emb.set_image(url="attachment://cat.png")
-            await inter.edit_original_response(embed=emb, file=file)
-
-
+        
+ 
 @bot.slash_command(
     description="Отправить нарушителей подумать о своем поведении",
     default_member_permissions=disnake.Permissions(moderate_members=True),

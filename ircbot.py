@@ -13,6 +13,7 @@ def on_join(connection,event):
   connection.privmsg(target,f"{event.source.split('!~')[0]} вошел в чат")
 def on_quit(connection,event):
   print(event)
+  event.source = event.source.split("!~")[0]
   if not validate_nickname(event.source): return
   connection.privmsg(target,f"{event.source.split('!~')[0]} вышел с чата.")
 reactor = irc.client.Reactor()

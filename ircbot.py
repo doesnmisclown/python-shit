@@ -10,12 +10,12 @@ def on_join(connection,event):
   print(event)
   event.source = event.source.split("!~")[0]
   if not validate_nickname(event.source): return
-  connection.privmsg(target,f"{event.source.split('!~')[0]} вошел в чат")
+  connection.privmsg(target,f"{event.source.split('!~')[0]} залетел на перьях в чат")
 def on_quit(connection,event):
   print(event)
   event.source = event.source.split("!~")[0]
   if not validate_nickname(event.source): return
-  connection.privmsg(target,f"{event.source.split('!~')[0]} вышел с чата.")
+  connection.privmsg(target,f"{event.source.split('!~')[0]} съебался с чата.")
 reactor = irc.client.Reactor()
 c = reactor.server().connect("irc.libera.chat",6667,"NotifyBot")
 c.add_global_handler("welcome",on_connect)
